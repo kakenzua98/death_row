@@ -24,9 +24,8 @@ library(purrr)
 library(ggplot2)
 library(tidytext)
 
-offender_data <- read_excel("offender_data/offender_info.xlsx") %>% 
+offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>% 
   clean_names() %>% 
-  rename(last_words = link_1) %>% 
   mutate(full_name = paste(first_name, last_name, sep = " ")) %>% 
   select(-last_name, -first_name)
 
@@ -42,24 +41,114 @@ word_counts <- clean_data %>%
   left_join(totals, by = "full_name")
 
 add_later <- offender_data %>% 
-  select(-link, -last_words)
+  select(-last_words)
 
-word_sentiments <- word_counts %>% 
-  inner_join(get_sentiments("nrc")) %>% 
-  #count(word, full_name, sort = TRUE) %>% 
-  count(full_name, sentiment, total_words) %>%
-  ungroup() %>%
-  # Make a new percent column with mutate 
-  mutate(percent = n/total_words) %>%
-  right_join(add_later, by = "full_name")
 
 nrc <- get_sentiments("nrc")
 afinn <- get_sentiments("afinn")
 bing <- get_sentiments("bing")
 
+```
+NRC analysis of positive/negative range of words
+* can enable filtering based on race, sentiment
+```{r}
+word_nrc <- word_counts %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  count(full_name, sentiment, total_words) %>%
+  #count(full_name, sentiment, sort = TRUE)
+  ungroup() %>%
+  # Make a new percent column with mutate 
+  mutate(percent = n/total_words) %>% 
+  filter(sentiment == "negative") %>% 
+  right_join(add_later, by = "full_name") %>% 
+  #filter(offender_race == "Hispanic") %>% 
+  filter(!is.na(sentiment)) %>% 
+  mutate(date = ymd(date)) %>% 
+  ggplot(aes(x = date, y = percent, color = total_words)) +
+    geom_point()
 
-  
+word_nrc
+```
+
+
+Most Common Words
+```{r}
+
+top_words <- word_counts %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment) %>% 
+  # Group by sentiment
+  group_by(sentiment) %>%
+  # Take the top 10 for each sentiment
+  top_n(10) %>%
+  ungroup() %>%
+  # Make word a factor in order of n
+  mutate(word = reorder(word, n))
+
+# Use aes() to put words on the x-axis and n on the y-axis
+ggplot(top_words, aes(word, n, fill = sentiment)) +
+  # Make a bar chart with geom_col()
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free") +  
+  coord_flip()
+
 
 
 ```
+Which race used the most negative words
+```{r}
+race_pos_sentiment <- clean_data %>% 
+  mutate(offender_race = case_when(offender_race == "Histpanic" ~ "Hispanic",
+                                   TRUE ~ offender_race)) %>% 
+  group_by(offender_race) %>% 
+  mutate(race_total = n()) %>% 
+  ungroup() %>%
+  inner_join(get_sentiments("nrc")) %>% 
+  count(offender_race, sentiment, race_total) %>% 
+  mutate(percent = n / race_total) %>%
+  filter(sentiment == "positive") %>%
+  arrange(percent)
+
+race_pos_sentiment
+
+race_neg_sentiment <- clean_data %>% 
+  mutate(offender_race = case_when(offender_race == "Histpanic" ~ "Hispanic",
+                                   TRUE ~ offender_race)) %>% 
+  group_by(offender_race) %>% 
+  mutate(race_total = n()) %>% 
+  ungroup() %>%
+  inner_join(get_sentiments("nrc")) %>% 
+  count(offender_race, sentiment, race_total) %>% 
+  mutate(percent = n / race_total) %>%
+  filter(sentiment == "negative") %>%
+  arrange(percent)
+
+race_neg_sentiment
+
+
+```
+Using Afinn to get the -2 to 2 distribution
+```{r}
+word_afinn <- word_counts %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  #count(word, full_name, sort = TRUE) %>% 
+  count(full_name, score, total_words) %>%
+  ungroup() %>%
+  # Make a new percent column with mutate 
+  #mutate(percent = n/total_words) %>%
+  right_join(add_later, by = "full_name") %>% 
+  #filter(sentiment == "anger") %>% 
+  group_by(full_name) %>% 
+  mutate(contribution = score * n / sum(n)) %>% 
+  ggplot(aes(x = execution, y = )) +
+    geom_boxplot()
+
+word_afinn
+```
+
+Looking at the percentage of each race for that year
+```{r}
+
+```
+
 
