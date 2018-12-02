@@ -107,7 +107,8 @@ race_pos_sentiment <- clean_data %>%
   count(offender_race, sentiment, race_total) %>% 
   mutate(percent = n / race_total) %>%
   filter(sentiment == "positive") %>%
-  arrange(percent)
+  arrange(percent) %>% 
+  mutate(percent = percent*100)
 
 race_pos_sentiment
 
@@ -121,7 +122,8 @@ race_neg_sentiment <- clean_data %>%
   count(offender_race, sentiment, race_total) %>% 
   mutate(percent = n / race_total) %>%
   filter(sentiment == "negative") %>%
-  arrange(percent)
+  arrange(percent) %>% 
+  mutate(percent = percent*100)
 
 race_neg_sentiment
 
@@ -129,26 +131,66 @@ race_neg_sentiment
 ```
 Using Afinn to get the -2 to 2 distribution
 ```{r}
-word_afinn <- word_counts %>% 
-  inner_join(get_sentiments("afinn")) %>% 
-  #count(word, full_name, sort = TRUE) %>% 
-  count(full_name, score, total_words) %>%
-  ungroup() %>%
-  # Make a new percent column with mutate 
-  #mutate(percent = n/total_words) %>%
-  right_join(add_later, by = "full_name") %>% 
-  #filter(sentiment == "anger") %>% 
-  group_by(full_name) %>% 
-  mutate(contribution = score * n / sum(n)) %>% 
-  ggplot(aes(x = execution, y = )) +
-    geom_boxplot()
-
-word_afinn
+# word_afinn <- word_counts %>% 
+#   inner_join(get_sentiments("afinn")) %>% 
+#   #count(word, full_name, sort = TRUE) %>% 
+#   count(full_name, score, total_words) %>%
+#   ungroup() %>%
+#   # Make a new percent column with mutate 
+#   #mutate(percent = n/total_words) %>%
+#   right_join(add_later, by = "full_name") %>% 
+#   #filter(sentiment == "anger") %>% 
+#   group_by(full_name) %>% 
+#   mutate(contribution = score * n / sum(n)) %>% 
+#   ggplot(aes(x = execution, y = score)) +
+#     geom_boxplot()
+# 
+# word_afinn
 ```
 
-Looking at the percentage of each race for that year
+As time passes - can allow break down by race
 ```{r}
+library(lubridate)
 
+sentiment_by_time <- clean_data %>%
+  #right_join(add_later, by = "full_name") %>% 
+  mutate(date = floor_date(date, unit = "2 months")) %>%
+  group_by(date) %>% 
+  mutate(total_words = n()) %>% 
+  ungroup() %>%
+  inner_join(get_sentiments("nrc"))
+
+sentiment_by_time %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  #filter(offender_race == "Hispanic") %>% 
+  count(date, sentiment, total_words) %>%
+  ungroup() %>%  
+  mutate(percent = n / total_words) %>%
+  ggplot(aes(date, percent, color = sentiment)) +
+  geom_line(size = 1.5) +
+  geom_smooth(method = "lm", se = FALSE, lty = 2) +
+  expand_limits(y = 0)
 ```
 
+Trying to get a boxplot
+```{r}
+sentiment_counts <- clean_data %>% 
+  left_join(totals, by = "full_name") %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  filter(sentiment == "positive") %>%
+  mutate(date = floor_date(date, unit = "12 months")) %>% 
+  count(full_name, date, total_words) %>%
+  ungroup() %>%
+  mutate(percent = n / total_words) %>%
+  mutate(date = ymd(date)) %>% 
+  mutate(year = as.numeric(format(date,'%Y'))) %>% 
+  ggplot(aes(x = as.factor(year), y = percent)) +
+  geom_boxplot()
+  
+
+sentiment_counts
+  
+  
+
+```
 
