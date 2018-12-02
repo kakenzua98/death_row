@@ -1,0 +1,65 @@
+---
+title: "sentiment_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(stringr)
+library(fs)
+library(scales)
+library(lubridate)
+library(dplyr)
+library(knitr)
+library(tibble)
+library(foreign)
+library(kableExtra)
+library(formattable)
+library(readxl)
+library(readr)
+library(janitor)
+library(tibble)
+library(purrr)
+library(ggplot2)
+library(tidytext)
+
+offender_data <- read_excel("offender_data/offender_info.xlsx") %>% 
+  clean_names() %>% 
+  rename(last_words = link_1) %>% 
+  mutate(full_name = paste(first_name, last_name, sep = " ")) %>% 
+  select(-last_name, -first_name)
+
+clean_data <- offender_data %>% 
+  unnest_tokens(word, last_words)
+
+totals <- clean_data %>% 
+  count(full_name) %>%
+  # Rename the new column
+  rename(total_words = n)
+
+word_counts <- clean_data %>% 
+  left_join(totals, by = "full_name")
+
+add_later <- offender_data %>% 
+  select(-link, -last_words)
+
+word_sentiments <- word_counts %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  #count(word, full_name, sort = TRUE) %>% 
+  count(full_name, sentiment, total_words) %>%
+  ungroup() %>%
+  # Make a new percent column with mutate 
+  mutate(percent = n/total_words) %>%
+  right_join(add_later, by = "full_name")
+
+nrc <- get_sentiments("nrc")
+afinn <- get_sentiments("afinn")
+bing <- get_sentiments("bing")
+
+
+  
+
+
+```
+
