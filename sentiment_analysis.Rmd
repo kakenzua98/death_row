@@ -32,6 +32,13 @@ offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>%
 clean_data <- offender_data %>% 
   unnest_tokens(word, last_words)
 
+word_cloud <- clean_data %>% 
+  inner_join(get_sentiments("nrc"))
+
+write_rds(word_cloud, "death_row_app/word_cloud.rds")
+
+  
+
 totals <- clean_data %>% 
   count(full_name) %>%
   # Rename the new column

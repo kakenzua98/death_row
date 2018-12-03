@@ -11,10 +11,12 @@ library(tidyverse)
 library(shiny)
 library(ggrepel)
 library(datasets)
+library(wordcloud2)
 
 top_words <- read_rds("top_words.rds")
 sentiment_by_time <- read_rds("sentiment_by_time.rds")
 race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
+word_cloud <- read_rds("word_cloud.rds")
 
 race_choices <- c("All",
                   "Black",
@@ -27,8 +29,16 @@ ui <- fluidPage(
   tabsetPanel(
     tabPanel(
       title = "Most Common Words",
+      h1("Column"),
       numericInput("number", "Number of Words", 15, 1),
-      plotOutput("wordPlot")),
+      plotOutput("wordPlot"),
+      h1("Word Cloud"),
+      numericInput(inputId = "num", label = "Maximum number of words",
+                 value = 100, min = 5),
+      #colourInput("col", "Background colour", value = "white"),
+      wordcloud2Output("cloud")
+      
+      ),
     # Create "Table" tab
     
     tabPanel(
@@ -73,6 +83,11 @@ server <- function(input, output) {
      top_words_plot
       
      
+   })
+   
+   output$cloud <- renderWordcloud2({
+     # Create a word cloud object
+     create_wordcloud(word_cloud$word, num_words = 50, background = "white")
    })
    
    output$agePlot <- renderPlot({
