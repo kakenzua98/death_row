@@ -42,10 +42,19 @@ ui <- fluidPage(
   tabsetPanel(
     tabPanel(
       title = "Introduction",
-      h1("Map")),
+      h2("Summary:"),
+      h2("Findings:"), 
+      h2("Source of Data"),
+      h3("Relevant Reading Materials:")),
     tabPanel(
       title = "Why Texas?",
       h3("Texas Conducts More Executions than Other States"),
+      h5("Texas has seen a rise in death penalty executions, as shown below. Sentiment Analysis of the men and women executed in Texas can provide more detail than that of any of state because of the open record and sheer number of data points."),
+      checkboxInput(inputId = "state_executions_tbl", 
+                    label = "Show Summary Table", 
+                    value = FALSE),
+      br(),
+      br(),
       h4("Pie Chart of State Executions:"),
       p("The pie chart below show state executions over the past 10 years. As shown below, Texas has taken up a considerable majority over the past few years, with an apparent rise in the number of executions"),
       selectInput(inputId = "year",
@@ -53,9 +62,12 @@ ui <- fluidPage(
                   choices = year_choices,
                   selected = "2018"),
       plotOutput("piePlot"),
+      br(),
+      br(),
       h4("Timeline of Executions in the 5 Top States:"),
       p("The line graph below is limited to states that have conducted excecutions over the last year since many states have a 'death row' but very rarely conduct executions, such as CA. For these states, the death penalty is often symbolic of the severity of the offender's actins rather than the result of their time in prison. The offenders often just spend the rest of their lives on 'death row'"),
-      plotOutput("statePlot")),
+      plotOutput("statePlot"),
+      DT::dataTableOutput("state_table")),
     tabPanel(
       title = "Most Common Words",
       h1("Column"),
@@ -235,6 +247,12 @@ server <- function(input, output) {
      }
    })
 
+   output$state_table <- DT::renderDataTable({
+     if (input$state_executions_tbl == TRUE) {
+       state_executions 
+     }
+   })
+   
    
    
 }
