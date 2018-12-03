@@ -52,22 +52,22 @@ bing <- get_sentiments("bing")
 NRC analysis of positive/negative range of words
 * can enable filtering based on race, sentiment
 ```{r}
-word_nrc <- word_counts %>% 
-  inner_join(get_sentiments("nrc")) %>% 
-  count(full_name, sentiment, total_words) %>%
-  #count(full_name, sentiment, sort = TRUE)
-  ungroup() %>%
-  # Make a new percent column with mutate 
-  mutate(percent = n/total_words) %>% 
-  filter(sentiment == "negative") %>% 
-  right_join(add_later, by = "full_name") %>% 
-  #filter(offender_race == "Hispanic") %>% 
-  filter(!is.na(sentiment)) %>% 
-  mutate(date = ymd(date)) %>% 
-  ggplot(aes(x = date, y = percent, color = total_words)) +
-    geom_point()
-
-word_nrc
+# word_nrc <- word_counts %>% 
+#   inner_join(get_sentiments("nrc")) %>% 
+#   count(full_name, sentiment, total_words) %>%
+#   #count(full_name, sentiment, sort = TRUE)
+#   ungroup() %>%
+#   # Make a new percent column with mutate 
+#   mutate(percent = n/total_words) %>% 
+#   filter(sentiment == "negative") %>% 
+#   right_join(add_later, by = "full_name") %>% 
+#   #filter(offender_race == "Hispanic") %>% 
+#   filter(!is.na(sentiment)) %>% 
+#   mutate(date = ymd(date)) %>% 
+#   ggplot(aes(x = date, y = percent, color = total_words)) +
+#     geom_line()
+# 
+# word_nrc
 ```
 
 
@@ -85,47 +85,26 @@ top_words <- word_counts %>%
   # Make word a factor in order of n
   mutate(word = reorder(word, n))
 
-# Use aes() to put words on the x-axis and n on the y-axis
-ggplot(top_words, aes(word, n, fill = sentiment)) +
-  # Make a bar chart with geom_col()
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~sentiment, scales = "free") +  
-  coord_flip()
-
-
+write_rds(top_words, "death_row_app/top_words.rds")
 
 ```
 Which race used the most negative words
 ```{r}
-race_pos_sentiment <- clean_data %>% 
+
+race_sentiment_tbl <- clean_data %>% 
   mutate(offender_race = case_when(offender_race == "Histpanic" ~ "Hispanic",
                                    TRUE ~ offender_race)) %>% 
   group_by(offender_race) %>% 
   mutate(race_total = n()) %>% 
   ungroup() %>%
-  inner_join(get_sentiments("nrc")) %>% 
+  inner_join(get_sentiments("bing")) %>% 
   count(offender_race, sentiment, race_total) %>% 
   mutate(percent = n / race_total) %>%
-  filter(sentiment == "positive") %>%
+  #filter(sentiment %in% c("negative","positive")) %>%
   arrange(percent) %>% 
   mutate(percent = percent*100)
 
-race_pos_sentiment
-
-race_neg_sentiment <- clean_data %>% 
-  mutate(offender_race = case_when(offender_race == "Histpanic" ~ "Hispanic",
-                                   TRUE ~ offender_race)) %>% 
-  group_by(offender_race) %>% 
-  mutate(race_total = n()) %>% 
-  ungroup() %>%
-  inner_join(get_sentiments("nrc")) %>% 
-  count(offender_race, sentiment, race_total) %>% 
-  mutate(percent = n / race_total) %>%
-  filter(sentiment == "negative") %>%
-  arrange(percent) %>% 
-  mutate(percent = percent*100)
-
-race_neg_sentiment
+write_rds(race_sentiment_tbl, "death_row_app/race_sentiment_tbl.rds")
 
 
 ```
@@ -154,25 +133,35 @@ library(lubridate)
 
 sentiment_by_time <- clean_data %>%
   #right_join(add_later, by = "full_name") %>% 
+  #filter(offender_race == "Black") %>% 
   mutate(date = floor_date(date, unit = "2 months")) %>%
   group_by(date) %>% 
   mutate(total_words = n()) %>% 
   ungroup() %>%
-  inner_join(get_sentiments("nrc"))
+  inner_join(get_sentiments("bing")) 
 
-sentiment_by_time %>%
-  filter(sentiment %in% c("positive", "negative")) %>%
-  #filter(offender_race == "Hispanic") %>% 
-  count(date, sentiment, total_words) %>%
-  ungroup() %>%  
-  mutate(percent = n / total_words) %>%
-  ggplot(aes(date, percent, color = sentiment)) +
-  geom_line(size = 1.5) +
-  geom_smooth(method = "lm", se = FALSE, lty = 2) +
-  expand_limits(y = 0)
+write_rds(sentiment_by_time, "death_row_app/sentiment_by_time.rds")
+
+  
 ```
 
-Trying to get a boxplot
+With age 
+```{r}
+by_age <- sentiment_by_time %>% 
+  count(age, sentiment, total_words) %>%
+  ungroup() %>%  
+  mutate(percent = n / total_words) %>% 
+  ggplot(aes(age, percent, color = sentiment)) +
+  #geom_boxplot()
+  geom_line(size = 1.5)
+
+by_age
+  
+```
+
+
+
+Trying to get a boxplot - WOULD BE BETTER W AFINN
 ```{r}
 sentiment_counts <- clean_data %>% 
   left_join(totals, by = "full_name") %>% 
