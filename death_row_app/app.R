@@ -12,6 +12,8 @@ library(shiny)
 library(ggrepel)
 library(datasets)
 library(wordcloud2)
+library(ggplot2)
+theme_set(theme_classic())
 
 #figPath = system.file("examples/peace.png", package = "wordcloud2")
 top_words <- read_rds("top_words.rds")
@@ -19,11 +21,20 @@ sentiment_by_time <- read_rds("sentiment_by_time.rds")
 race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
 word_cloud <- read_rds("word_cloud.rds")
 word_freq <- read_rds("word_freq.rds")
+state_executions <- read_rds("state_executions.rds")
 
 race_choices <- c("All",
                   "Black",
                   "Hispanic",
                   "White")
+
+#year_choices <- c(levels(state_executions$date))
+
+year_choices <- c("2018",
+                         "2017",
+                         "2016",
+                         "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008")
+
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -34,7 +45,17 @@ ui <- fluidPage(
       h1("Map")),
     tabPanel(
       title = "Why Texas?",
-      h1("Map")),
+      h3("Texas Conducts More Executions than Other States"),
+      h4("Pie Chart of State Executions:"),
+      p("The pie chart below show state executions over the past 10 years. As shown below, Texas has taken up a considerable majority over the past few years, with an apparent rise in the number of executions"),
+      selectInput(inputId = "year",
+                  label = "Year:",
+                  choices = year_choices,
+                  selected = "2018"),
+      plotOutput("piePlot"),
+      h4("Timeline of Executions in the 5 Top States:"),
+      p("The line graph below is limited to states that have conducted excecutions over the last year since many states have a 'death row' but very rarely conduct executions, such as CA. For these states, the death penalty is often symbolic of the severity of the offender's actins rather than the result of their time in prison. The offenders often just spend the rest of their lives on 'death row'"),
+      plotOutput("statePlot")),
     tabPanel(
       title = "Most Common Words",
       h1("Column"),
@@ -90,7 +111,42 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
    
-   output$wordPlot <- renderPlot({
+  
+  output$piePlot <- renderPlot({
+    
+    pie_chart <- state_executions %>% 
+      filter(str_detect(date, input$year)) %>% 
+      ggplot(aes(x= "", y= n, fill= state)) + geom_bar(width = 1, stat = "identity") +
+      theme(axis.line = element_blank(), 
+            plot.title = element_text(hjust=0.5)) + 
+      labs(fill="state", 
+           x=NULL, 
+           y=NULL, 
+           title="Pie Chart of Executions", 
+           caption="Source: Death Penalty Information Center")
+    
+    pie_chart + coord_polar(theta = "y", start=0)
+    
+    
+  })
+  
+  output$statePlot <- renderPlot({
+    
+    state_plot <- state_executions %>% 
+      filter(state == c("TX","GA","TN","AL","GA","NE","OH","SD","FL")) %>% 
+      ggplot(aes(x = date, y = n, color = state)) + geom_line(size = 1.5) +
+      theme( plot.title = element_text(hjust=0.5)) + 
+      labs(fill="state", 
+           x="Year", 
+           y="Number of Executions", 
+           title="Pie Chart of Executions", 
+           caption="Source: Death Penalty Information Center")
+    
+    state_plot
+    
+  })
+   
+  output$wordPlot <- renderPlot({
      
      top_words_plot <- top_words %>% 
        top_n(input$number) %>% 

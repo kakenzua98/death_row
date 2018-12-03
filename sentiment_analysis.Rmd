@@ -33,14 +33,36 @@ offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>%
 execution_database <- read_excel("offender_data/all_execution_database.xlsx") %>% 
   clean_names() 
   
+
+library(ggplot2)
+theme_set(theme_classic())
+
 state_executions <- execution_database %>% 
   mutate(date = ymd(date)) %>% 
   mutate(date = floor_date(date, unit = "12 months")) %>%
   #mutate(year = as.numeric(format(date,'%Y'))) %>%
-  count(date, county, state)
-#%>% 
- # ggplot(aes(x = date, y = n, color = state)) + geom_point() 
+  count(date, state)
+  
+pie_chart <- state_executions %>% 
+  filter(str_detect(date, "2018")) %>% 
+  ggplot(aes(x= "", y= n, fill= state)) + geom_bar(width = 1, stat = "identity") +
+  theme(axis.line = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  labs(fill="state", 
+       x=NULL, 
+       y=NULL, 
+       title="Pie Chart of class", 
+       caption="Source: mpg")
 
+pie_chart + coord_polar(theta = "y", start=0)
+
+state_plot <- state_executions %>% 
+      filter(state == c("TX","GA","TN","AL","GA","NE","OH","SD","FL")) %>% 
+      ggplot(aes(x = date, y = n, color = state)) + geom_line()
+    
+    state_plot
+
+write_rds(state_executions, "death_row_app/state_executions.rds")
 
 clean_data <- offender_data %>% 
   unnest_tokens(word, last_words)
