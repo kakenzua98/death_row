@@ -22,6 +22,7 @@ library(janitor)
 library(tibble)
 library(purrr)
 library(ggplot2)
+library(ggrepel)
 library(tidytext)
 
 offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>% 
@@ -29,13 +30,28 @@ offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>%
   mutate(full_name = paste(first_name, last_name, sep = " ")) %>% 
   select(-last_name, -first_name)
 
+execution_database <- read_excel("offender_data/all_execution_database.xlsx") %>% 
+  clean_names() 
+  
+state_executions <- execution_database %>% 
+  mutate(date = ymd(date)) %>% 
+  mutate(date = floor_date(date, unit = "12 months")) %>%
+  #mutate(year = as.numeric(format(date,'%Y'))) %>%
+  count(date, county, state)
+#%>% 
+ # ggplot(aes(x = date, y = n, color = state)) + geom_point() 
+
+
 clean_data <- offender_data %>% 
   unnest_tokens(word, last_words)
 
 word_cloud <- clean_data %>% 
-  inner_join(get_sentiments("nrc"))
+  inner_join(get_sentiments("nrc")) %>% 
+  select(word) 
 
-write_rds(word_cloud, "death_row_app/word_cloud.rds")
+word_freq <- data.frame(table(word_cloud$word)) 
+
+write_rds(word_freq, "death_row_app/word_freq.rds")
 
   
 
