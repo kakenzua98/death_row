@@ -120,6 +120,7 @@ ui <- fluidPage(
     tabPanel(
       title = "Most Common Words",
       h2("The Most Common Words"),
+      p("The data visualizations below are based on sentiment analysis of Last Statements by the subjects."),
       sidebarLayout(# does not currently work but i want it toooo
         sidebarPanel(
           p(
@@ -133,21 +134,20 @@ ui <- fluidPage(
             multiple = TRUE
           )
         ),
-        mainPanel(plotOutput("wordPlot"),
-                  br())),
-      h2("Word Cloud"),
-      numericInput(
-        inputId = "num_cloud",
-        label = "Maximum number of words",
-        value = 100,
-        min = 5
-      ),
+        mainPanel(h2("Pie Charts of Sentiments"),
+                  p("The chart below shows the breakdown between sentiments users selects."),
+                  p("There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."),
+                  plotOutput("wordPlot"),
+                  br(),
+                  h2("Word Cloud"),
+                  p("Hover to see the word and how many times it was used in all Last Statements."),
+                  wordcloud2Output("cloud")))
       #CAUSES AN ERROR WHENEVER I:
       #     # sliderInput("slider1", label = h3("Slider"), min = 0,
       #     max = 100, value = 50)
       # )
       #colourInput("col", "Background colour", value = "white"),
-      wordcloud2Output("cloud")
+      #wordcloud2Output("cloud")
       
     ),
     # Create "Table" tab
@@ -262,7 +262,7 @@ server <- function(input, output) {
     word_freq %>% 
       rename(word = Var1) %>% 
       inner_join(get_sentiments("nrc")) %>% 
-      filter(sentiment == input$multi_sent)
+      filter(sentiment == input$multi_sent) 
     wordcloud2(word_freq, size = 2)
   })
   
