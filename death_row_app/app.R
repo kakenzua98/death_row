@@ -13,11 +13,13 @@ library(ggrepel)
 library(datasets)
 library(wordcloud2)
 library(ggplot2)
-
+library(stringr)
+library(plotly)
 library(shinythemes)
-
 library(shinyWidgets)
 theme_set(theme_classic())
+
+
 
 #figPath = system.file("examples/peace.png", package = "wordcloud2")
 top_words <- read_rds("top_words.rds")
@@ -33,12 +35,17 @@ race_choices <- c("All",
                   "Hispanic",
                   "White")
 
-#year_choices <- c(levels(state_executions$date))
+year_choices <- state_executions %>%
+  mutate(year = str_sub(date, start = 1, end = 4)) %>%
+  select(year) %>%
+  unique() %>%
+  arrange(year)
+
 # HOW COULD I DO LEVELS FOR THIS
-year_choices <- c("2018",
-                         "2017",
-                         "2016",
-                         "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008")
+# year_choices <- c("2018",
+#                          "2017",
+#                          "2016",
+#                          "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008")
 
 sentiment_choices <- c("Positive" = "positive",
                        "Anticipation" = "anticipation",
@@ -53,7 +60,7 @@ sentiment_choices <- c("Positive" = "positive",
 
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(theme = shinytheme("superhero"),
+ui <- fluidPage(theme = shinytheme("flatly"),
   navbarPage("Sentiment Analysis of Death Row Executions",
     tabPanel(
       title = "Introduction",
@@ -65,24 +72,30 @@ ui <- fluidPage(theme = shinytheme("superhero"),
       title = "Why Texas?",
       h3("Texas Conducts More Executions than Other States"),
       h5("Texas has seen a rise in death penalty executions, as shown below. Sentiment Analysis of the men and women executed in Texas can provide more detail than that of any of state because of the open record and sheer number of data points."),
+      br(),
+      h4("Share of Executions Each Year:"), 
+      p("The pie chart below show state executions over the past 10 years. As shown below, Texas has taken up a considerable majority over the past few years, with an apparent rise in the number of executions"),
+      br(),
       sidebarPanel(
+        p("Select a year to see the breakdown of executions between states."),
         selectInput(inputId = "year",
                     label = "Year:",
                     choices = year_choices,
                     selected = "2018"),
+        br(),
+        p("Summary Table contains additional information about specifc offenders, counties, and victims."),
         checkboxInput(inputId = "state_executions_tbl", 
                       label = "Show Summary Table", 
                       value = FALSE)),
       br(),
-      h4("Pie Chart of State Executions:"),
-      p("The pie chart below show state executions over the past 10 years. As shown below, Texas has taken up a considerable majority over the past few years, with an apparent rise in the number of executions"),
       mainPanel(plotOutput("piePlot")),
       br(),
       br(),
+      br(),
+      br(),
       h4("The Past 30 Years of Dealth Penalty Executions:"),
-      p("While executions have decreased significantly, Texas has maintained a high number of executions, conducting nearly half of all executions in 2018"),
       
-      DT::dataTableOutput("state_table"),
+      dataTableOutput("state_table"),
       plotOutput("overallPlot")),
     tabPanel(
       title = "Most Common Words",
@@ -110,23 +123,26 @@ ui <- fluidPage(theme = shinytheme("superhero"),
     
     tabPanel(
       title = "Time Plot",
-      selectInput(inputId = "race",
+      sidebarPanel(selectInput(inputId = "race",
                   label = "Race:",
                   choices = race_choices,
-                  selected = "Black"),
+                  selected = "All"),
       sliderInput(inputId = "age", label = "Age",
                   min = 27, max = 67,
                   value = c(30, 50)),
       checkboxInput(inputId = "line", 
                     label = "Show Best Fit Line", 
                     value = FALSE),
+      checkboxInput(inputId = "offender_info", 
+                    label = "Show offender_info", 
+                    value = FALSE),
       checkboxInput(inputId = "race_sent_tbl", 
                     label = "Show Summary Table", 
-                    value = FALSE),
+                    value = FALSE)),
       #checkboxGroupButtons(inputId = "Id038"),
-      plotOutput("timePlot"),
+      mainPanel(plotOutput("timePlot"),
       br(),
-      dataTableOutput("table")),
+      dataTableOutput("table"))),
     
     tabPanel(
       title = "Age Plot",
@@ -158,7 +174,6 @@ server <- function(input, output) {
       labs(fill="state", 
            x=NULL, 
            y=NULL, 
-           title="Pie Chart of Executions", 
            caption="Source: Death Penalty Information Center")
     
     pie_chart + coord_polar(theta = "y", start=0)
@@ -195,7 +210,6 @@ server <- function(input, output) {
        labs(fill="sentiment", 
             x=NULL, 
             y=NULL, 
-            title="Pie Chart of Executions", 
             caption="Source: Death Penalty Information Center")
      
      top_words_plot + coord_polar(theta = "y", start=0)
@@ -237,45 +251,35 @@ server <- function(input, output) {
    
    output$timePlot <- renderPlot({
      
-     # ALL IS NOT WORKING
      
-     if(input$race == "All") {
-       sen_by_time_plot <- sentiment_by_time %>%
-         count(date, age, sentiment, total_words) %>%
-         ungroup() %>%  
-         mutate(percent = n / total_words) %>% 
-         ggplot(aes(date, percent, color = sentiment)) +
-         geom_line(size = 1.5) 
+     
+     if (input$race != "All") {
+       sentiment_by_time <- sentiment_by_time %>% 
+       filter(offender_race == input$race)}
+      
+     sen_by_time_plot <- sentiment_by_time %>% 
+       filter(age >= input$age[1] & age <= input$age[2]) %>% 
+       count(full_name, date, sentiment, total_words) %>%
+       #ungroup() %>%  
+       mutate(percent = (n / total_words)*100) %>% 
+       ggplot(aes(date, percent, color = sentiment)) +
+         geom_point(size = 1.5) 
+       
+       # sen_by_time_plot <- ggplotly(sen_by_time_plot)
+       # chart_link = plotly_POST(p, filename="hover/tooltip")
+       # chart_link
        
        if (input$line == TRUE) {
          sen_by_time_plot <- sen_by_time_plot + geom_smooth(method = "lm", se = FALSE, lty = 2)
        }
        
-       sen_by_time_plot
-       
-     }
-     
-     if(input$race != "All") {
-       sen_by_time_plot <- sentiment_by_time %>% 
-       filter(offender_race == input$race) %>% 
-       filter(age >= input$age[1] & age <= input$age[2]) %>% 
-       count(date, sentiment, total_words) %>%
-       ungroup() %>%  
-       mutate(percent = (n / total_words)*100) %>% 
-       ggplot(aes(date, percent, color = sentiment)) +
-         geom_line(size = 1.5) 
-       
-       if (input$line == TRUE) {
-         sen_by_time_plot <- sen_by_time_plot + geom_smooth(method = "lm", se = FALSE, lty = 2)
+       if (input$offender_info == TRUE) {
+         sen_by_time_plot <- sen_by_time_plot + geom_label_repel(aes(label = toupper(full_name)), size = 3, force = 3)
        }
 
      
      sen_by_time_plot
-     }
-     
-     
-     
-   })
+     })
    
 
    output$table <- renderDataTable({
@@ -284,9 +288,10 @@ server <- function(input, output) {
      }
    })
 
-   output$state_table <- DT::renderDataTable({
+   output$state_table <- renderDataTable({
      if (input$state_executions_tbl == TRUE) {
-       state_executions 
+       state_executions %>% 
+         filter(str_detect(date, input$year))
      }
    })
    
