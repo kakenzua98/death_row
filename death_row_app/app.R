@@ -13,6 +13,10 @@ library(ggrepel)
 library(datasets)
 library(wordcloud2)
 library(ggplot2)
+
+library(shinythemes)
+
+library(shinyWidgets)
 theme_set(theme_classic())
 
 #figPath = system.file("examples/peace.png", package = "wordcloud2")
@@ -22,6 +26,7 @@ race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
 word_cloud <- read_rds("word_cloud.rds")
 word_freq <- read_rds("word_freq.rds")
 state_executions <- read_rds("state_executions.rds")
+row_exec <- read_rds("row_exec.rds")
 
 race_choices <- c("All",
                   "Black",
@@ -29,17 +34,27 @@ race_choices <- c("All",
                   "White")
 
 #year_choices <- c(levels(state_executions$date))
-
+# HOW COULD I DO LEVELS FOR THIS
 year_choices <- c("2018",
                          "2017",
                          "2016",
                          "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008")
 
+sentiment_choices <- c("Positive" = "positive",
+                       "Anticipation" = "anticipation",
+                       "Joy" = "joy",
+                       "Trust" = "trust",
+                       "Sadness" = "sadness",
+                       "Surprise" = "surprise",
+                       "Anger" = "anger",
+                       "Fear" = "fear",
+                       "Disgust" = "disgust",
+                       "Negative" = "negative")
+
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-  h1("Sentiment Analysis of Death Row Executions"),
-  tabsetPanel(
+ui <- fluidPage(theme = shinytheme("superhero"),
+  navbarPage("Sentiment Analysis of Death Row Executions",
     tabPanel(
       title = "Introduction",
       h2("Summary:"),
@@ -50,38 +65,45 @@ ui <- fluidPage(
       title = "Why Texas?",
       h3("Texas Conducts More Executions than Other States"),
       h5("Texas has seen a rise in death penalty executions, as shown below. Sentiment Analysis of the men and women executed in Texas can provide more detail than that of any of state because of the open record and sheer number of data points."),
-      checkboxInput(inputId = "state_executions_tbl", 
-                    label = "Show Summary Table", 
-                    value = FALSE),
-      br(),
+      sidebarPanel(
+        selectInput(inputId = "year",
+                    label = "Year:",
+                    choices = year_choices,
+                    selected = "2018"),
+        checkboxInput(inputId = "state_executions_tbl", 
+                      label = "Show Summary Table", 
+                      value = FALSE)),
       br(),
       h4("Pie Chart of State Executions:"),
       p("The pie chart below show state executions over the past 10 years. As shown below, Texas has taken up a considerable majority over the past few years, with an apparent rise in the number of executions"),
-      selectInput(inputId = "year",
-                  label = "Year:",
-                  choices = year_choices,
-                  selected = "2018"),
-      plotOutput("piePlot"),
+      mainPanel(plotOutput("piePlot")),
       br(),
       br(),
-      h4("Timeline of Executions in the 5 Top States:"),
-      p("The line graph below is limited to states that have conducted excecutions over the last year since many states have a 'death row' but very rarely conduct executions, such as CA. For these states, the death penalty is often symbolic of the severity of the offender's actins rather than the result of their time in prison. The offenders often just spend the rest of their lives on 'death row'"),
-      plotOutput("statePlot"),
-      DT::dataTableOutput("state_table")),
+      h4("The Past 30 Years of Dealth Penalty Executions:"),
+      p("While executions have decreased significantly, Texas has maintained a high number of executions, conducting nearly half of all executions in 2018"),
+      
+      DT::dataTableOutput("state_table"),
+      plotOutput("overallPlot")),
     tabPanel(
       title = "Most Common Words",
-      h1("Column"),
-      numericInput("number", "Number of Words", 15, 1),
-      plotOutput("wordPlot"),
-      h1("Word Cloud"),
-      numericInput(inputId = "num_cloud", label = "Maximum number of words",
-                 value = 100, min = 5),
-      #CAUSES AN ERROR WHENEVER I: 
-  #     # sliderInput("slider1", label = h3("Slider"), min = 0, 
-  #     max = 100, value = 50)
-  # )
-      #colourInput("col", "Background colour", value = "white"),
-      wordcloud2Output("cloud")
+      h2("The Most Common Words"),
+        sidebarLayout(
+          sidebarPanel(numericInput("number", "Number of Words", 15, 1),
+                                   selectInput(inputId = "type_sentiment", 
+                                               label = "Sentiment",
+                                               choices = sentiment_choices)),
+        mainPanel(plotOutput("wordPlot"),
+                  br(),
+                  plotOutput("wordCol"))),
+        h2("Word Cloud"),
+        numericInput(inputId = "num_cloud", label = "Maximum number of words",
+                   value = 100, min = 5),
+        #CAUSES AN ERROR WHENEVER I: 
+    #     # sliderInput("slider1", label = h3("Slider"), min = 0, 
+    #     max = 100, value = 50)
+    # )
+        #colourInput("col", "Background colour", value = "white"),
+        wordcloud2Output("cloud")
       
       ),
     # Create "Table" tab
@@ -103,7 +125,8 @@ ui <- fluidPage(
                     value = FALSE),
       #checkboxGroupButtons(inputId = "Id038"),
       plotOutput("timePlot"),
-      DT::dataTableOutput("table")),
+      br(),
+      dataTableOutput("table")),
     
     tabPanel(
       title = "Age Plot",
@@ -127,6 +150,7 @@ server <- function(input, output) {
   output$piePlot <- renderPlot({
     
     pie_chart <- state_executions %>% 
+      count(date, state) %>% 
       filter(str_detect(date, input$year)) %>% 
       ggplot(aes(x= "", y= n, fill= state)) + geom_bar(width = 1, stat = "identity") +
       theme(axis.line = element_blank(), 
@@ -142,37 +166,50 @@ server <- function(input, output) {
     
   })
   
-  output$statePlot <- renderPlot({
+  
+  output$overallPlot <- renderPlot({
     
-    state_plot <- state_executions %>% 
-      filter(state == c("TX","GA","TN","AL","GA","NE","OH","SD","FL")) %>% 
-      ggplot(aes(x = date, y = n, color = state)) + geom_line(size = 1.5) +
+    overall_plot <- state_executions %>% 
+      count(date, state) %>%
+      mutate(state = case_when(state == "TX" ~ "Texas",
+                               TRUE ~ "Rest of the US")) %>% 
+      ggplot(aes(x = date, y = n, fill = state)) + geom_col() +
       theme( plot.title = element_text(hjust=0.5)) + 
       labs(fill="state", 
            x="Year", 
            y="Number of Executions", 
-           title="Pie Chart of Executions", 
+           title="Texas vs. The Rest of the United States",
            caption="Source: Death Penalty Information Center")
     
-    state_plot
+    overall_plot
     
   })
-   
+  
   output$wordPlot <- renderPlot({
-     
+    
      top_words_plot <- top_words %>% 
-       top_n(input$number) %>% 
-       ggplot(aes(word, n, fill = sentiment)) +
-       # Make a bar chart with geom_col()
-       
-       geom_col(show.legend = FALSE) +
-       facet_wrap(~sentiment, scales = "free") +  
-       coord_flip()
+       #top_n(input$number) %>% 
+       ggplot(aes(x= "", y= n, fill = sentiment)) + geom_bar(width = 1, stat = "identity") +
+       theme(axis.line = element_blank(), 
+             plot.title = element_text(hjust=0.5)) + 
+       labs(fill="sentiment", 
+            x=NULL, 
+            y=NULL, 
+            title="Pie Chart of Executions", 
+            caption="Source: Death Penalty Information Center")
      
-     top_words_plot
-      
-     
+     top_words_plot + coord_polar(theta = "y", start=0)
+       # Make a bar chart with geom_col
    })
+  output$wordCol <- renderPlot({
+    top_words_col <- top_words %>% top_n(input$number) %>% 
+      ggplot(aes(word, n, fill = sentiment)) +
+      geom_col(show.legend = TRUE) + coord_flip()
+    
+
+    top_words_col
+    
+  })
    
    output$cloud <- renderWordcloud2({
      # Create a word cloud object
@@ -221,12 +258,12 @@ server <- function(input, output) {
      if(input$race != "All") {
        sen_by_time_plot <- sentiment_by_time %>% 
        filter(offender_race == input$race) %>% 
-       #filter(age >= input$age[1] & age <= input$age[2])
+       filter(age >= input$age[1] & age <= input$age[2]) %>% 
        count(date, sentiment, total_words) %>%
        ungroup() %>%  
-       mutate(percent = n / total_words) %>% 
+       mutate(percent = (n / total_words)*100) %>% 
        ggplot(aes(date, percent, color = sentiment)) +
-       geom_line(size = 1.5) 
+         geom_line(size = 1.5) 
        
        if (input$line == TRUE) {
          sen_by_time_plot <- sen_by_time_plot + geom_smooth(method = "lm", se = FALSE, lty = 2)
@@ -241,7 +278,7 @@ server <- function(input, output) {
    })
    
 
-   output$table <- DT::renderDataTable({
+   output$table <- renderDataTable({
      if (input$race_sent_tbl == TRUE) {
        race_sentiment_tbl 
      }

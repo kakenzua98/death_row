@@ -34,33 +34,11 @@ execution_database <- read_excel("offender_data/all_execution_database.xlsx") %>
   clean_names() 
   
 
-library(ggplot2)
-theme_set(theme_classic())
-
 state_executions <- execution_database %>% 
   mutate(date = ymd(date)) %>% 
-  mutate(date = floor_date(date, unit = "12 months")) %>%
-  #mutate(year = as.numeric(format(date,'%Y'))) %>%
-  count(date, state)
-  
-pie_chart <- state_executions %>% 
-  filter(str_detect(date, "2018")) %>% 
-  ggplot(aes(x= "", y= n, fill= state)) + geom_bar(width = 1, stat = "identity") +
-  theme(axis.line = element_blank(), 
-        plot.title = element_text(hjust=0.5)) + 
-  labs(fill="state", 
-       x=NULL, 
-       y=NULL, 
-       title="Pie Chart of class", 
-       caption="Source: mpg")
+  mutate(date = floor_date(date, unit = "12 months"))
+  #mutate(year = as.numeric(format(date,'%Y')))
 
-pie_chart + coord_polar(theta = "y", start=0)
-
-state_plot <- state_executions %>% 
-      filter(state == c("TX","GA","TN","AL","GA","NE","OH","SD","FL")) %>% 
-      ggplot(aes(x = date, y = n, color = state)) + geom_line()
-    
-    state_plot
 
 write_rds(state_executions, "death_row_app/state_executions.rds")
 
@@ -75,6 +53,9 @@ word_freq <- data.frame(table(word_cloud$word))
 
 write_rds(word_freq, "death_row_app/word_freq.rds")
 
+row_exec <- read_excel("offender_data/row_exec.xlsx") %>%  
+  ggplot()
+write_rds(row_exec, "death_row_app/row_exec.rds")
   
 
 totals <- clean_data %>% 
@@ -120,7 +101,7 @@ Most Common Words
 ```{r}
 
 top_words <- word_counts %>%
-  inner_join(get_sentiments("bing")) %>%
+  inner_join(get_sentiments("nrc")) %>%
   count(word, sentiment) %>% 
   # Group by sentiment
   group_by(sentiment) %>%
