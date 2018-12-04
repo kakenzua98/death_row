@@ -174,11 +174,6 @@ ui <- fluidPage(
           value = FALSE
         ),
         checkboxInput(
-          inputId = "offender_info",
-          label = "Show offender_info",
-          value = FALSE
-        ),
-        checkboxInput(
           inputId = "race_sent_tbl",
           label = "Show Summary Table",
           value = FALSE
@@ -264,6 +259,10 @@ server <- function(input, output) {
     # Create a word cloud object
     
     #wordcloud2(word_freq, figPath = "texas.png", size = 1.5,color = "skyblue")
+    word_freq %>% 
+      rename(word = Var1) %>% 
+      inner_join(get_sentiments("nrc")) %>% 
+      filter(sentiment == input$multi_sent)
     wordcloud2(word_freq, size = 2)
   })
   
@@ -306,11 +305,6 @@ server <- function(input, output) {
         sen_by_time_plot + geom_smooth(method = "lm",
                                        se = FALSE,
                                        lty = 2)
-    }
-    
-    if (input$offender_info == TRUE) {
-      sen_by_time_plot <-
-        sen_by_time_plot + geom_label_repel(aes(label = toupper(full_name)), size = 3, force = 3)
     }
     
     
