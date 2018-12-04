@@ -30,6 +30,8 @@ offender_data <- read_excel("offender_data/offender_2014-18.xlsx") %>%
   mutate(full_name = paste(first_name, last_name, sep = " ")) %>% 
   select(-last_name, -first_name)
 
+write_rds(offender_data, "death_row_app/last_words.rds")
+
 execution_database <- read_excel("offender_data/all_execution_database.xlsx") %>% 
   clean_names() 
   

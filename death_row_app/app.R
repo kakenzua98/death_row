@@ -259,10 +259,7 @@ server <- function(input, output) {
     # Create a word cloud object
     
     #wordcloud2(word_freq, figPath = "texas.png", size = 1.5,color = "skyblue")
-    word_freq %>% 
-      rename(word = Var1) %>% 
-      inner_join(get_sentiments("nrc")) %>% 
-      filter(sentiment == input$multi_sent) 
+
     wordcloud2(word_freq, size = 2)
   })
   
@@ -343,6 +340,10 @@ server <- function(input, output) {
       {
         input$explore
         
+        last_words %>%
+          filter(!is.na(last_words)) %>% 
+          select(last_words) %>% 
+          sample_n(3)
 
       }
     )

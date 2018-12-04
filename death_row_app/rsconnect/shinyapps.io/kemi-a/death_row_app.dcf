@@ -1,0 +1,12 @@
+name: death_row_app
+title: death_row_app
+username:
+account: kemi-a
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 601521
+bundleId: 1740445
+url: https://kemi-a.shinyapps.io/death_row_app/
+when: 1543957828.86045
+asMultiple: FALSE
+asStatic: FALSE
