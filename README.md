@@ -16,5 +16,8 @@ Sentiment Analysis begins on the Most Common Words tab which shows that a majori
 
 The time plot is inconclusive. However, it does show that the percentage of positive words used has increased at a higher rate than the percentage of negative words used. 
 
+### Takeaway
+I'd like the primary takeway from this project to be awareness of the rampant executions in Texas and to give a small voice to the last words of the inmates.
+
 ### Link to Shiny App
 https://kemi-a.shinyapps.io/death_row_app/
