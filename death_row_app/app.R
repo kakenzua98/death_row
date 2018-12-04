@@ -136,7 +136,7 @@ ui <- fluidPage(
         ),
         mainPanel(h2("Pie Charts of Sentiments"),
                   p("The chart below shows the breakdown between sentiments users selects."),
-                  p("There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."),
+                  p("Note: There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."),
                   plotOutput("wordPlot"),
                   br(),
                   h2("Word Cloud"),
@@ -343,8 +343,7 @@ server <- function(input, output) {
       {
         input$explore
         
-        last_words %>%
-          sample_n(3)
+
       }
     )
   
