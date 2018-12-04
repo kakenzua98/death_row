@@ -94,20 +94,22 @@ ui <- fluidPage(theme = shinytheme("flatly"),
       br(),
       br(),
       h4("The Past 30 Years of Dealth Penalty Executions:"),
-      
+      p("Though the amount of death row executions have descreased nationwide, Texas has maintained high levels of executions. In 2018, Texas conducted nearly half of the executions nationwide even though the death penalty in legal in 31 states including California and Florida"),
       dataTableOutput("state_table"),
-      plotOutput("overallPlot")),
+      plotlyOutput("overallPlot")),
     tabPanel(
       title = "Most Common Words",
       h2("The Most Common Words"),
         sidebarLayout(
-          sidebarPanel(numericInput("number", "Number of Words", 15, 1),
-                                   selectInput(inputId = "type_sentiment", 
-                                               label = "Sentiment",
-                                               choices = sentiment_choices)),
+          # does not currently work but i want it toooo
+          sidebarPanel(p("Select options below to view the breakdown between sentiments in the last words of death row inmates."),
+                       pickerInput(inputId = "multi_sent", 
+                                   label = "Select Multiple Sentiments", 
+                                   choices = sentiment_choices, 
+                                   selected = "Positive",
+                                   multiple = TRUE)),
         mainPanel(plotOutput("wordPlot"),
-                  br(),
-                  plotOutput("wordCol"))),
+                  br())),
         h2("Word Cloud"),
         numericInput(inputId = "num_cloud", label = "Maximum number of words",
                    value = 100, min = 5),
@@ -140,13 +142,13 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     label = "Show Summary Table", 
                     value = FALSE)),
       #checkboxGroupButtons(inputId = "Id038"),
-      mainPanel(plotOutput("timePlot"),
+      mainPanel(plotlyOutput("timePlot"),
       br(),
       dataTableOutput("table"))),
     
     tabPanel(
       title = "Age Plot",
-      plotOutput("agePlot")),
+      plotlyOutput("agePlot")),
   
     tabPanel(
       title = "Analysis",
@@ -182,7 +184,7 @@ server <- function(input, output) {
   })
   
   
-  output$overallPlot <- renderPlot({
+  output$overallPlot <- renderPlotly({
     
     overall_plot <- state_executions %>% 
       count(date, state) %>%
@@ -204,35 +206,28 @@ server <- function(input, output) {
     
      top_words_plot <- top_words %>% 
        #top_n(input$number) %>% 
+       filter(sentiment %in% input$multi_sent) %>% 
        ggplot(aes(x= "", y= n, fill = sentiment)) + geom_bar(width = 1, stat = "identity") +
        theme(axis.line = element_blank(), 
              plot.title = element_text(hjust=0.5)) + 
        labs(fill="sentiment", 
             x=NULL, 
-            y=NULL, 
-            caption="Source: Death Penalty Information Center")
+            y=NULL,
+            title = paste("looking at", nrow(top_words)),
+            caption="Source: Texas Department of Criminal Justice")
      
      top_words_plot + coord_polar(theta = "y", start=0)
        # Make a bar chart with geom_col
    })
-  output$wordCol <- renderPlot({
-    top_words_col <- top_words %>% top_n(input$number) %>% 
-      ggplot(aes(word, n, fill = sentiment)) +
-      geom_col(show.legend = TRUE) + coord_flip()
-    
 
-    top_words_col
-    
-  })
-   
    output$cloud <- renderWordcloud2({
      # Create a word cloud object
 
      #wordcloud2(word_freq, figPath = "texas.png", size = 1.5,color = "skyblue")
-     wordcloud2(word_freq, size = 2, shape = 'circle')
+     wordcloud2(word_freq, size = 2)
    })
    
-   output$agePlot <- renderPlot({
+   output$agePlot <- renderPlotly({
      
      by_age <- sentiment_by_time %>% 
        count(age, sentiment, total_words) %>%
@@ -249,7 +244,7 @@ server <- function(input, output) {
    
    
    
-   output$timePlot <- renderPlot({
+   output$timePlot <- renderPlotly({
      
      
      
@@ -284,14 +279,16 @@ server <- function(input, output) {
 
    output$table <- renderDataTable({
      if (input$race_sent_tbl == TRUE) {
-       race_sentiment_tbl 
+       sentiment_by_time %>% 
+         filter(offender_race == input$race)
      }
    })
 
    output$state_table <- renderDataTable({
      if (input$state_executions_tbl == TRUE) {
        state_executions %>% 
-         filter(str_detect(date, input$year))
+         filter(str_detect(date, input$year)) 
+         #filter(age >= input$age[1] & age <= input$age[2])
      }
    })
    
