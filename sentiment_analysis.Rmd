@@ -54,10 +54,6 @@ word_cloud <- clean_data %>%
 word_freq <- data.frame(table(word_cloud$word)) 
 
 write_rds(word_freq, "death_row_app/word_freq.rds")
-
-row_exec <- read_excel("offender_data/row_exec.xlsx") %>%  
-  ggplot()
-write_rds(row_exec, "death_row_app/row_exec.rds")
   
 
 totals <- clean_data %>% 

@@ -7,6 +7,10 @@
 #    http://shiny.rstudio.com/
 #
 
+######################
+## Loading packages ##
+######################
+
 library(tidyverse)
 library(shiny)
 library(ggrepel)
@@ -17,6 +21,7 @@ library(stringr)
 library(plotly)
 library(shinythemes)
 library(shinyWidgets)
+library(tidytext)
 theme_set(theme_classic())
 
 
@@ -24,11 +29,10 @@ theme_set(theme_classic())
 #figPath = system.file("examples/peace.png", package = "wordcloud2")
 top_words <- read_rds("top_words.rds")
 sentiment_by_time <- read_rds("sentiment_by_time.rds")
-race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
+#race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
 word_cloud <- read_rds("word_cloud.rds")
 word_freq <- read_rds("word_freq.rds")
 state_executions <- read_rds("state_executions.rds")
-row_exec <- read_rds("row_exec.rds")
 last_words <- read_rds("last_words.rds")
 
 race_choices <- c("All",
@@ -188,7 +192,7 @@ ui <- fluidPage(
     tabPanel(
       title = "Specific Inmates",
       sidebarPanel(actionButton("explore", "Generate New Set")),
-      dataTableOutput("offender_sample")
+      tableOutput("offender_sample")
     )
   )
 )
@@ -260,6 +264,11 @@ server <- function(input, output) {
     
     #wordcloud2(word_freq, figPath = "texas.png", size = 1.5,color = "skyblue")
 
+    word_freq %>%
+      rename(word = Var1) %>%
+      inner_join(get_sentiments("nrc")) %>%
+      filter(sentiment %in% input$multi_sent)
+    
     wordcloud2(word_freq, size = 2)
   })
   
@@ -290,8 +299,9 @@ server <- function(input, output) {
       count(full_name, date, sentiment, total_words) %>%
       #ungroup() %>%
       mutate(percent = (n / total_words) * 100) %>%
-      ggplot(aes(date, percent, color = sentiment)) +
-      geom_point(size = 1.5)
+      rename(Name = full_name, Date = date, Percent = percent, Sentiment = sentiment) %>% 
+      ggplot(aes(Date, Percent, color = Sentiment)) +
+      geom_point(aes(label1 = Name), size = 1.5)
     
     # sen_by_time_plot <- ggplotly(sen_by_time_plot)
     # chart_link = plotly_POST(p, filename="hover/tooltip")
@@ -336,13 +346,14 @@ server <- function(input, output) {
       striped = TRUE,
       hover = TRUE,
       bordered = TRUE,
-      spacing = "l",
+      spacing = "m",
+      digits = 0,
       {
         input$explore
         
         last_words %>%
           filter(!is.na(last_words)) %>% 
-          select(last_words) %>% 
+          select(full_name, last_words, age, date) %>% 
           sample_n(3)
 
       }
