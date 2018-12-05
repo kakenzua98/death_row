@@ -24,12 +24,8 @@ library(shinyWidgets)
 library(tidytext)
 theme_set(theme_classic())
 
-
-
-#figPath = system.file("examples/peace.png", package = "wordcloud2")
 top_words <- read_rds("top_words.rds")
 sentiment_by_time <- read_rds("sentiment_by_time.rds")
-#race_sentiment_tbl <- read_rds("race_sentiment_tbl.rds")
 word_cloud <- read_rds("word_cloud.rds")
 word_freq <- read_rds("word_freq.rds")
 state_executions <- read_rds("state_executions.rds")
