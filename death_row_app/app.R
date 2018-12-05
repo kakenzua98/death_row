@@ -68,6 +68,7 @@ ui <- fluidPage(
     "Analysis of Death Row Inmates in Texas",
     tabPanel(
       title = "Introduction",
+      h5("By Kemi Akenzua for the GOV1005 Final Project"),
       h3("Summary:"),
       p("Texas published the last statements of every death row inmate they've executed. This presents a great opportunity to analysis what many think is an outdated practice from a entirely inaccessible perspective: that of the executed inmates."),
       br(),
