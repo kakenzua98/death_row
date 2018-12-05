@@ -46,11 +46,6 @@ year_choices <- state_executions %>%
   unique() %>%
   arrange(year)
 
-# HOW COULD I DO LEVELS FOR THIS
-# year_choices <- c("2018",
-#                          "2017",
-#                          "2016",
-#                          "2015", "2014", "2013", "2012", "2011", "2010", "2009", "2008")
 
 sentiment_choices <- c(
   "Positive" = "positive",
@@ -70,13 +65,24 @@ sentiment_choices <- c(
 ui <- fluidPage(
   theme = shinytheme("flatly"),
   navbarPage(
-    "Sentiment Analysis of Death Row Executions",
+    "Analysis of Death Row Inmates in Texas",
     tabPanel(
       title = "Introduction",
-      h2("Summary:"),
-      h2("Findings:"),
-      h2("Source of Data"),
-      h3("Relevant Reading Materials:")
+      h3("Summary:"),
+      p("Texas published the last statements of every death row inmate they've executed. This presents a great opportunity to analysis what many think is an outdated practice from a entirely inaccessible perspective: that of the executed inmates."),
+      br(),
+      h3("Organization of the App:"),
+      p("Why Texas:? On this page I show why Texas is one of, if not the, most important states when discussing the death penalty."),
+      p("Most Common Words: On this page, you can see specific visualizations of the breakdown of sentiments in all Last Statements by selecting which sentiment to include in a pie chart. There is also a word cloud that shows the most commonly used words based on the sentiments selected."),
+      p("Time Plot: This graph plots the percentage of positive or negative words. Users can look at all subjects or subset based on race and/or age."),
+      p("Specific Inmates: This tab allows users see a random group of three subjects and their last statements."),
+      br(),
+      h3("Some Findings:"),
+      p("As shown on the 'Why Texas?' tab, I found that Texas conducted nearly half of the death row executions nationwide in 2018. Though executions have decreased since 1999, Texas has maintained a large margin of the total executions and now, as stated, conducted the majority of them. Additionally, though 31 states have not outlawed the death penalty, less than 10 actually conducted any executions thsi year. This reaffirms some of the statements made in the Medium articles that discuss death penalty being more of a de factor life sentence in most states.   Sentiment Analysis begins on the Most Common Words tab which shows that a majority of the words in Last Statements are connote positivity and/or trust. The word cloud below shows that one of the most common words in Last Statements by the subjects was the word good with 55 entries.  The time plot is inconclusive. However, it does show that the percentage of positive words used has increased at a higher rate than the percentage of negative words used. "),
+      p("Poke around with the data and see if you can find more interesting insights."),
+      br(),
+      h2("Relevant Reading Materials and Sources:"),
+      p("https://medium.com/bigger-picture/kill-the-death-penalty-ea38c8929e30, https://medium.com/s/story/love-is-the-most-common-word-in-death-row-last-statements-f15ab0e8ad16, https://deathpenaltyinfo.org/views-executions, http://www.tdcj.state.tx.us/death_row/dr_executed_offenders.html")
     ),
     tabPanel(
       title = "Why Texas?",
@@ -157,8 +163,12 @@ ui <- fluidPage(
     # Create "Table" tab
     
     tabPanel(
-      title = "Time Plot",
+      title = "Sentiments Over Time",
+      h2("View Changes in Sentiment over Time Amongst Texas Death Row Subjects"),
+      p("Use the options in the side panel to view the graph comparing the year and percentage of positive or negative sentiments."),
+      p("Note: The calculations below are not weighted."),
       sidebarPanel(
+        p("Hover over any point to view additional info about that subject"),
         selectInput(
           inputId = "race",
           label = "Race:",
@@ -191,7 +201,8 @@ ui <- fluidPage(
     
     tabPanel(
       title = "Specific Inmates",
-      sidebarPanel(actionButton("explore", "Generate New Set")),
+      h2("Read the Statements of Inmates Seconds Before Execution"),
+      sidebarPanel(p("Show a randomized set of three inmates and their statements."), actionButton("explore", "Generate New Set")),
       tableOutput("offender_sample")
     )
   )
@@ -226,10 +237,11 @@ server <- function(input, output) {
       count(date, state) %>%
       mutate(state = case_when(state == "TX" ~ "Texas",
                                TRUE ~ "Rest of the US")) %>%
-      ggplot(aes(x = date, y = n, fill = state)) + geom_col() +
+      rename(Region = state, Executions = n, Date = date) %>% 
+      ggplot(aes(x = Date, y = Executions, fill = Region)) + geom_col() +
       theme(plot.title = element_text(hjust = 0.5)) +
       labs(
-        fill = "state",
+        fill = "Region",
         x = "Year",
         y = "Number of Executions",
         title = "Texas vs. The Rest of the United States",
@@ -353,7 +365,9 @@ server <- function(input, output) {
         
         last_words %>%
           filter(!is.na(last_words)) %>% 
-          select(full_name, last_words, age, date) %>% 
+          filter(last_words != "Last Statement") %>% 
+          rename(Name = full_name, Statement = last_words, Age = age, Race = offender_race) %>% 
+          select(Name, Statement, Age, Race) %>% 
           sample_n(3)
 
       }
