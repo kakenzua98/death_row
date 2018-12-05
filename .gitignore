@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 .sentiment_analysis_files/
-.README.html
-.attempt_maps.Rmd
-.test/
+README.html
+attempt_maps.Rmd
+test/
+attempt_maps.Rmd
+death_row_app/texas.png
