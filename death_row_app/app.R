@@ -44,7 +44,8 @@ year_choices <- state_executions %>%
   mutate(year = str_sub(date, start = 1, end = 4)) %>%
   select(year) %>%
   unique() %>%
-  arrange(year)
+  arrange(year) %>%
+  filter(!is.na(year))
 
 
 sentiment_choices <- c(
@@ -292,6 +293,7 @@ server <- function(input, output) {
       # As the link explains, pie charts are a combo of stacked bar charts and polar coordinates
       
       count(date, state) %>%
+      filter(!is.na(date)) %>%
       filter(str_detect(date, input$year)) %>%
       ggplot(aes(x = "", y = n, fill = state)) + geom_bar(width = 1, stat = "identity") +
       theme(axis.line = element_blank(),
