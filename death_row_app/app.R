@@ -168,8 +168,9 @@ ui <- fluidPage(
       title = "Most Common Words",
       h2("The Most Common Words"),
       p(
-        "The data visualizations below are based on sentiment analysis of Last Statements by the subjects."
+        "The world cloud below is based on sentiment analysis of Last Statements by the subjects."
       ),
+      p("The word may not change very much since many words are associated with multiple sentiments."),
       sidebarLayout(
         # does not currently work but i want it toooo
         sidebarPanel(
@@ -193,14 +194,14 @@ ui <- fluidPage(
         # I've added multiple breaks because I think it spaces it better
         
         mainPanel(
-          h2("Pie Charts of Sentiments"),
-          p(
-            "The chart below shows the breakdown between sentiments users selects."
-          ),
-          p(
-            "Note: There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."
-          ),
-          plotOutput("wordPlot"),
+          # h2("Pie Charts of Sentiments"),
+          # p(
+          #   "The chart below shows the breakdown between sentiments users selects."
+          # ),
+          # p(
+          #   "Note: There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."
+          # ),
+          # plotOutput("wordPlot"),
           br(),
           h2("Word Cloud"),
           p(
@@ -347,34 +348,34 @@ server <- function(input, output) {
     overall_plot
     
   })
-  
-  output$wordPlot <- renderPlot({
-    top_words_plot <- top_words %>%
-      
-      # I filter sentiment to be just the options users have selected
-      # I filter by the year users have inputted
-      # The code to create the pie chart was based on this link: https://ggplot2.tidyverse.org/reference/coord_polar.html
-      # As the link explains, pie charts are a combo of stacked bar charts and polar coordinates
-      
-      
-      filter(sentiment %in% input$multi_sent) %>%
-      ggplot(aes(x = "", y = n, fill = sentiment)) + geom_bar(width = 1, stat = "identity") +
-      
-      # In the theme function I set the title of the plot and adjust it's position
-      # I changed the labels to be more intuitive/repesentative of the data
-      
-      theme(axis.line = element_blank(),
-            plot.title = element_text(hjust = 0.5)) +
-      labs(
-        fill = "sentiment",
-        x = NULL,
-        y = NULL,
-        title = paste("looking at", nrow(top_words), "words"),
-        caption = "Source: Texas Department of Criminal Justice"
-      )
-    
-    top_words_plot + coord_polar(theta = "y", start = 0)
-  })
+  # 
+  # output$wordPlot <- renderPlot({
+  #   top_words_plot <- top_words %>%
+  #     
+  #     # I filter sentiment to be just the options users have selected
+  #     # I filter by the year users have inputted
+  #     # The code to create the pie chart was based on this link: https://ggplot2.tidyverse.org/reference/coord_polar.html
+  #     # As the link explains, pie charts are a combo of stacked bar charts and polar coordinates
+  #     
+  #     
+  #     filter(sentiment %in% input$multi_sent) %>%
+  #     ggplot(aes(x = "", y = n, fill = sentiment)) + geom_bar(width = 1, stat = "identity") +
+  #     
+  #     # In the theme function I set the title of the plot and adjust it's position
+  #     # I changed the labels to be more intuitive/repesentative of the data
+  #     
+  #     theme(axis.line = element_blank(),
+  #           plot.title = element_text(hjust = 0.5)) +
+  #     labs(
+  #       fill = "sentiment",
+  #       x = NULL,
+  #       y = NULL,
+  #       title = paste("looking at", nrow(top_words), "words"),
+  #       caption = "Source: Texas Department of Criminal Justice"
+  #     )
+  #   
+  #   top_words_plot + coord_polar(theta = "y", start = 0)
+  # })
   
   output$cloud <- renderWordcloud2({
     
