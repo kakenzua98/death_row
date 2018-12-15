@@ -76,7 +76,7 @@ ui <- fluidPage(
     "Analysis of Death Row Inmates in Texas",
     tabPanel(
       title = "Introduction",
-      h5("By Kemi Akenzua for the GOV1005 Final Project"),
+      h5("By Kemi Akenzua"),
       h3("Summary:"),
       p(
         "Texas published the last statements of every death row inmate they've executed. This presents a great opportunity to analysis what many think is an outdated practice from a entirely inaccessible perspective: that of the executed inmates."
@@ -268,8 +268,8 @@ ui <- fluidPage(
       # I put the input functions in the sidebarPanel to format each tab better
       
       sidebarPanel(
-        p("Show a randomized set of three inmates and their statements."),
-        actionButton("explore", "Generate New Set")
+        p("Show a random inmate and their last words."),
+        actionButton("explore", "See New Statement")
       ),
       tableOutput("offender_sample")
     )
