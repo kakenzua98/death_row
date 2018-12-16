@@ -35,10 +35,17 @@ last_words <- read_rds("last_words.rds")
 ## Setting Choices for Inputs in the UI ##
 ##########################################
 
+# I hardcoded the race choices because there aren't that many. 
+# I could have lso just taken that from the dataset.
+
 race_choices <- c("All",
                   "Black",
                   "Hispanic",
                   "White")
+
+# There were far too many year choices to manually type in.
+# With the help of the TFs, I select the year column and extract the unique values.
+# I The filter out the NAs values which were showing up in the drop down menu.
 
 year_choices <- state_executions %>%
   mutate(year = str_sub(date, start = 1, end = 4)) %>%
@@ -70,7 +77,8 @@ ui <- fluidPage(
   theme = shinytheme("flatly"),
   
   # NAVIGATION BARS: navbarPage function enables a better layout for the navigation bar tabs
-  
+  # I start with an introduction of the app which also provides useful information and references. 
+  # Ideally, this would be an About portion and listed last in the tabs and the app would start with something punchier like that statements. 
   
   navbarPage(
     "Analysis of Death Row Inmates in Texas",
@@ -110,7 +118,8 @@ ui <- fluidPage(
       )
     ),
     
-    #
+    # Here I start with an explanation of the tab and the information shown. 
+    
     tabPanel(
       title = "Why Texas?",
       h3("Texas Conducts More Executions than Other States"),
@@ -128,6 +137,7 @@ ui <- fluidPage(
       # The choices, which is the list of values to select from, are set equal lists created earlier.
       # Here the user selects with a drop down menu.
       # The choices are coded earlier in the app.R and enable the user to choose any year with available data
+      # I think the dropdown menu is much easier to used and understand than a multiple choice option
       
       sidebarPanel(
         p("Select a year to see the breakdown of executions between states."),
@@ -153,6 +163,9 @@ ui <- fluidPage(
       ),
       br(),
       mainPanel(plotOutput("piePlot")),
+      
+      # The breaks may not be needed but I wanted more space between the piePlot and the next graph.
+      
       br(),
       br(),
       br(),
@@ -170,14 +183,15 @@ ui <- fluidPage(
       p(
         "The world cloud below is based on sentiment analysis of Last Statements by the subjects."
       ),
-      p("The word may not change very much since many words are associated with multiple sentiments."),
+      p(
+        "The word may not change very much since many words are associated with multiple sentiments."
+      ),
       sidebarLayout(
-        # does not currently work but i want it toooo
-        sidebarPanel(
+         sidebarPanel(
           p(
             "Select options below to view the breakdown between sentiments in the last words of death row inmates."
           ),
-        
+          
           # The pickerInput lets the user pick which sentiments they want to be included in the pie chart
           # This input is cleaner than check boxer because it collapses like a selectInput but allows you to check multiple similar to checkboxes
           
@@ -192,17 +206,9 @@ ui <- fluidPage(
         
         # I have the charts in the mainPanel so that they will be formatted next to (rather than below) the sidebar options
         # I've added multiple breaks because I think it spaces it better
-        
-        mainPanel(
-          # h2("Pie Charts of Sentiments"),
-          # p(
-          #   "The chart below shows the breakdown between sentiments users selects."
-          # ),
-          # p(
-          #   "Note: There are some words that may count as different sentiments based on context. This overlap is shown by colors that visibly overlap below."
-          # ),
-          # plotOutput("wordPlot"),
-          br(),
+        # I did a word cloud because I think it gives viewers a great visual representation of the words used which is much more powerful than just a graph
+      
+          mainPanel(
           h2("Word Cloud"),
           p(
             "Hover to see the word and how many times it was used in all Last Statements."
@@ -212,7 +218,9 @@ ui <- fluidPage(
       )
       
     ),
+    
     # Create "Table" tab
+    # I thought this was the best breakdown for organizing this tab.
     
     tabPanel(
       title = "Sentiments Over Time",
@@ -228,7 +236,7 @@ ui <- fluidPage(
       # I used selectInput for race since there are 4 choices and only one can be chosen at time
       # I use checkboxInput for best fit line since there's only two options which is easily handled with the value argument
       # I also use checkboxInput for the summary table
-      # I use plotlyOutput so the graph will have plotly functionality for hovering, subsetting the data, etc. 
+      # I use plotlyOutput so the graph will have plotly functionality for hovering, subsetting the data, etc.
       
       sidebarPanel(
         p("Hover over any point to view additional info about that subject"),
@@ -238,6 +246,10 @@ ui <- fluidPage(
           choices = race_choices,
           selected = "All"
         ),
+        
+        # The upper and lower boundaries are just the boundaries of my data
+        # I started with 30 and 50 because there are a good amount of respondents in this group
+        
         sliderInput(
           inputId = "age",
           label = "Age",
@@ -245,17 +257,27 @@ ui <- fluidPage(
           max = 67,
           value = c(30, 50)
         ),
+        
+        # The best fit line might be more useful with more data but it is still helpful to view possible trends
+        
         checkboxInput(
           inputId = "line",
           label = "Show Best Fit Line",
           value = FALSE
         ),
+        
+        # I think it is helpful to see the table since the graph is a bit confusing.
+        # Here, users can see the data and it filters with the filters they have set
+        
         checkboxInput(
           inputId = "race_sent_tbl",
           label = "Show Summary Table",
           value = FALSE
         )
       ),
+      
+      # I used plotly so that users can hover over points and see details
+      
       mainPanel(plotlyOutput("timePlot"),
                 br(),
                 dataTableOutput("table"))
@@ -266,6 +288,8 @@ ui <- fluidPage(
       h2("Read the Statements of Inmates Seconds Before Execution"),
       
       # I put the input functions in the sidebarPanel to format each tab better
+      # Users can select the button to show a new statement each time
+      # This code was partially from Max Weiss' code and stackoverflow.
       
       sidebarPanel(
         p("Show a random inmate and their last words."),
@@ -309,12 +333,15 @@ server <- function(input, output) {
         caption = "Source: Death Penalty Information Center"
       )
     
+    # This code is from the link provide above. 
+    # I don't completely understand polar coordinates but this involves changing the bar graph to polar coordinates
+    
     pie_chart + coord_polar(theta = "y", start = 0)
     
     
   })
   
-  # I use renderPlotly since I want my plot to be ggplotly with all the cinluded functionality 
+  # I use renderPlotly since I want my plot to be ggplotly with all the included functionality
   
   output$overallPlot <- renderPlotly({
     overall_plot <- state_executions %>%
@@ -348,37 +375,8 @@ server <- function(input, output) {
     overall_plot
     
   })
-  # 
-  # output$wordPlot <- renderPlot({
-  #   top_words_plot <- top_words %>%
-  #     
-  #     # I filter sentiment to be just the options users have selected
-  #     # I filter by the year users have inputted
-  #     # The code to create the pie chart was based on this link: https://ggplot2.tidyverse.org/reference/coord_polar.html
-  #     # As the link explains, pie charts are a combo of stacked bar charts and polar coordinates
-  #     
-  #     
-  #     filter(sentiment %in% input$multi_sent) %>%
-  #     ggplot(aes(x = "", y = n, fill = sentiment)) + geom_bar(width = 1, stat = "identity") +
-  #     
-  #     # In the theme function I set the title of the plot and adjust it's position
-  #     # I changed the labels to be more intuitive/repesentative of the data
-  #     
-  #     theme(axis.line = element_blank(),
-  #           plot.title = element_text(hjust = 0.5)) +
-  #     labs(
-  #       fill = "sentiment",
-  #       x = NULL,
-  #       y = NULL,
-  #       title = paste("looking at", nrow(top_words), "words"),
-  #       caption = "Source: Texas Department of Criminal Justice"
-  #     )
-  #   
-  #   top_words_plot + coord_polar(theta = "y", start = 0)
-  # })
   
   output$cloud <- renderWordcloud2({
-    
     word_freq %>%
       
       # I renamed the variables representing words to word so that I can join it with nrc sentiments; those sentiments were removed when I calculated frequency in the Rmd file
@@ -393,10 +391,9 @@ server <- function(input, output) {
     wordcloud2(word_freq, size = 2)
   })
   
-  # I use renderPlotly since I want my plot to be ggplotly with all the cinluded functionality 
+  # I use renderPlotly since I want my plot to be ggplotly with all the cinluded functionality
   
   output$timePlot <- renderPlotly({
-    
     # If All is not selected, then the dataframe will be filtered by the users' choice
     
     if (input$race != "All") {
@@ -405,13 +402,17 @@ server <- function(input, output) {
     }
     
     # I filter by age based on the input from the sliderInput for age. I couldn't think of another way to do that; perhaps with a single slider or faceted options
+    # I count by full name, date, sentiment,  and total because I want to show the negative AND positive percentages for each inmate.
+    # I mutate to create the percentage and round to the first digit after the decimal
     
     sen_by_time_plot <- sentiment_by_time %>%
       filter(age >= input$age[1] & age <= input$age[2]) %>%
       count(full_name, date, sentiment, total_words) %>%
       mutate(percent = (n / total_words) * 100) %>%
+      mutate(percent = round(percent, digits = 1)) %>%
       
       # I renamed some of the columns after I've finished counting, mutating, etc. so that the plotly labels will be more intuitive
+      # I set size of the points to 1.5 because I tested out a few options and this seemed like the best size at the time. Maybe smaller would be better. 
       
       rename(
         Name = full_name,
@@ -421,8 +422,8 @@ server <- function(input, output) {
       ) %>%
       ggplot(aes(Date, Percent, color = Sentiment)) +
       geom_point(aes(label1 = Name), size = 1.5)
-
-    # My best fit line code is based off of the code of Ms. Gayton and Mr. Arellano/Ms. Fridkin but different to fit 
+    
+    # My best fit line code is based off of the code of Ms. Gayton and Mr. Arellano/Ms. Fridkin but different to fit
     
     if (input$line == TRUE) {
       sen_by_time_plot <-
@@ -435,7 +436,8 @@ server <- function(input, output) {
   
   # I want the dataset to filter with the graph so I filter that here.
   # I use the same logic I used to filter the graph by filtering race only if All is not chosen.
-  # Then I filter by age. 
+  # Then I filter by age.
+  # I could have left out the filtering of the table, but I think it makes everything easier to understand
   
   output$table <- renderDataTable({
     if (input$race_sent_tbl == TRUE) {
@@ -460,16 +462,14 @@ server <- function(input, output) {
   })
   
   # The table below is to give users a glimpse into specific statements through randomization
+  # The code in the renderTable below is to make the table generated just easier to read. 
   
   output$offender_sample <-
     renderTable(
-      striped = TRUE,
       hover = TRUE,
       bordered = TRUE,
-      spacing = "m",
       digits = 0,
       {
-        
         # I use input$explore so that the code runs each time the button is clicked
         # The usage of this code is based off of code from Mr. Weiss' final project and stackoverflow
         
@@ -481,7 +481,8 @@ server <- function(input, output) {
           
           # I rename columns so that when the dataset is rendered, it will be easier to interpret
           # I select just the columns I need so users aren't overwhelmed by data
-          # I use sample to randomnly generate 5  data entries
+          # I use sample to randomnly generate 1  data entry
+          # At first I generated 5 but some were much much longer than others. Then I generated just 3 but realized it would be more powerful and respectful to just show one statement at a time. 
           
           rename(
             Name = full_name,

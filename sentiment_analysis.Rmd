@@ -5,6 +5,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# I certainly don't need all these libraries but I did use many of them. 
+
 library(tidyverse)
 library(stringr)
 library(fs)
